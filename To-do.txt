@@ -1,0 +1,9 @@
+Main Project - 
+- Add banknifty and nifty choice - DONE
+- Organize and make the execute order function  work - DONE
+- Implement status dict in the execute order function - DONE
+- Change read csv throughout - DONE
+- organize print statements - DONE
+- Implement and test order placement 
+- add MTM calculation - DONE
+- order update function 
