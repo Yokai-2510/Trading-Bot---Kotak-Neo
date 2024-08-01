@@ -7,6 +7,7 @@ from config import strategy_dict
 import pandas as pd
 import time
 from datetime import datetime
+from module_utilities import log_message
 
 global index 
 index = strategy_dict['index']
@@ -35,7 +36,7 @@ def fetch_spot_yf(index):
     ticker = yf.Ticker("^NSEI" if index == "NIFTY" else "^NSEBANK")
     data = ticker.history(period="1d")
     data = data.iloc[-1]['Close']
-    print(f"data yf last close for {index}", data)
+    #log_message(f"data yf last close for {index}", data)
     return data
 
 def fetch_ikeys(client, index):
@@ -77,8 +78,8 @@ def fetch_ikeys(client, index):
 
     df = df[['instrument_key', 'symbol', 'option_type', 'strike_price', 'expiry_date']]
     df = df.reset_index(drop=True)
-    print(f"Number of options in chain after filtering: {len(df)}")
-    print(df)
+    #log_message(f"Number of options in chain after filtering: {len(df)}")
+    #log_message(df)
     return df
 
 def write_csv_with_retry(df, filename, max_retries=15, delay=0.1):
@@ -88,10 +89,10 @@ def write_csv_with_retry(df, filename, max_retries=15, delay=0.1):
             return  # Success, exit the function
         except (OSError, IOError, PermissionError) as e:
             if attempt < max_retries - 1:  # don't sleep on the last attempt
-                print(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
+                log_message(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
-                print(f"Failed to write to {filename} after {max_retries} attempts: {str(e)}")
+                log_message(f"Failed to write to {filename} after {max_retries} attempts: {str(e)}")
 
 def update_spot_price(instrument_token, ltp):   
     global spot_price, last_valid_spot_price
@@ -138,7 +139,7 @@ def process_websocket_message(message):
                 update_option_chain(instrument_token, ltp)
 
     except Exception as e:
-        print(f"Error processing message: {e}")
+        log_message(f"Error processing message: {e}")
 
 def setup_websocket(client):
     def on_message(message):
@@ -174,7 +175,7 @@ def connect_websocket(client):
         client.subscribe(instrument_tokens=instrument_tokens)
         return True
     except Exception as e:
-        print(f"Exception while connecting to socket: {e}")
+        log_message(f"Exception while connecting to socket: {e}")
         return False
 
 def websocket_thread(client, stop_event):
@@ -187,7 +188,7 @@ def run_websocket(client):
 
     # Fetch indicator data
     indicator = fetch_indicator(index)
-    print("Indicator data:", indicator)
+    log_message("Indicator data:", indicator)
 
     # Initialize option_chain_df
     option_chain_df = fetch_ikeys(client, index)
