@@ -1,61 +1,45 @@
-# trading_bot.py
 
-import threading
-from datetime import datetime, timedelta
-import time
-from config import strategy_dict
-from module_evaluate import start_strategy
-from module_data import fetch_indicator, fetch_spot_yf, run_websocket
-from module_utilities import read_spot_price , parse_time
-from credentials import consumer_key, consumer_secret, mobile, mpin, login_password
-from neo_api_client import NeoAPI
+strategy_dict = {
 
-index = strategy_dict['index']
-indicator = fetch_indicator(index)
-print(indicator)
-last_close = fetch_spot_yf(index)
-current_zone = None
-last_processed_price = None
-client = None
+    "quantity" : '2', # Enter the Quantity ( in lots)
+    "order_type" : "MKT" , # L for LIMIT and MKT for MARKET
+    "limit_price" : "0" , # if order type is limit , then put the limit value
+    "index" : "NIFTY" , # BANKNIFTY or NIFTY
+    "ikey_criteria" : "LTP" , # Possible Values : STRIKE , ATM , ITM , LTP
+    "ikey_criteria_value" : "130" , # only applicable for STRIKE and LTP otherwise 0
+    "AMO" : "False" , # YES  or NO (after market order)
+    "global_loss" : "1" , # Global stop loss - will supersede strategy stop loss
+    "global_profit" : "1" , # Global profit - will supersede strategy profit 
+    "strategy_loss" : "1" , # stop loss at strategy level
+    "strategy_profit" : "1" , # profit/target at strategy level
+    "market_open" : "6:15" , # Time at which the Market Opens
+    "market_close" : "15:28" , # Time at which the Market closes
+    "exit_time" : "7:36" , # supersede risk conditions if exit time is met.
+}
 
-# client = NeoAPI(consumer_key=consumer_key, consumer_secret=consumer_secret, environment='prod')
-# client.login(mobilenumber=mobile, password=login_password)
-# client.session_2fa(OTP=mpin)
+status_dict = {
+    
+    'zone_index': "",  # Index of the current trading zone
+    'option_type': "",  # Type of the option (e.g., call, put)
+    'order_completion': "",  # Status of order completion
+    'order_ikey': "",  # Instrument key for entry order 
+    'order_status' : "" , # Current status of the order / strategy
+    'order_strike': "",  # Strike price at entry order placement
+    'mtm' : ' ',    # MTM of each order that has been squared off
+    'real_quantity' : '' , # Total Quanity , lot size x  number of lots
+    'current_ltp' : '' , # shows the current ltp of the selected instrument at various phases of the order
+    
+    'entry_transaction': "",  # Type of entry transaction (buy or sell)
+    'entry_success': "",  # Status of entry order success
+    'entry_ltp': "",  # Last traded price at entry order         
+    'entry_time': "",  # Time at entry order placement
+    'entry_spot': "",  # Spot price at entry order placement
+    
+    'exit_transaction': "",  # Type of exit transaction (buy or sell) Compliment of Entry 
+    'exit_success': "",  # Status of exit order success
+    'exit_criteria': "",  # Criteria for exit order
+    'exit_ltp': "",  # Last traded price at exit
+    'exit_time': "",  # Time of exit order
+    'exit_spot': "",  # Spot price at exit order placement
+}
 
-# websocket_thread = threading.Thread(target=run_websocket, args=(client,))
-# websocket_thread.start()
-# time.sleep(2)
-
-
-def main():
-    current_zone = None
-    last_processed_price = None
-    iteration = 0
-
-    while True:
-        time.sleep(0.5) 
-        spot_price = read_spot_price()
-        current_time = datetime.now()
-
-        # Parse market open and close times
-        market_open_time = parse_time(strategy_dict["market_open"])
-        market_close_time = parse_time(strategy_dict["market_close"])
-
-        # Update market open and close times based on the parsed values
-        market_open = current_time.replace(hour=market_open_time.hour, minute=market_open_time.minute, second=0, microsecond=0)
-        market_close = current_time.replace(hour=market_close_time.hour, minute=market_close_time.minute, second=0, microsecond=0)
-
-
-        if current_time > market_close:
-            print("market closed")
-            break
-
-        if current_time < market_open:
-            print("waiting for market to open")
-            continue
-
-        current_zone, last_processed_price = start_strategy(client, spot_price, indicator, current_zone, last_processed_price, strategy_dict)
-        print (f" Current Zone : {current_zone}")
-        
-if __name__ == "__main__":
-    main()
